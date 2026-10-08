@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f8f6f0">
+  <title>Little Letters · Persian writing</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="site-header"><a class="brand" href="./"><span class="brand-icon" aria-hidden="true">✳</span> little letters</a><span class="header-tag">A little Persian, every day</span></header>
+  <main>
+    <div class="intro"><span class="eyebrow">LET’S WRITE IN PERSIAN</span><h1>Little letters.<br>Big discoveries.</h1><p>Listen closely. Put the letters together. You’ve got this!</p></div>
+    <section class="activity" aria-label="Persian word writing activity">
+      <div class="activity-top"><span class="activity-label"><span aria-hidden="true">✎</span> Writing time</span><span id="progress">Word 1 of 5</span></div>
+      <div class="progress-track" aria-hidden="true"><div id="progress-fill"></div></div>
+      <button class="listen-button" id="listen"><span class="sound-icon" aria-hidden="true">♫</span><span>Hear the word<small>Listen, then build it below</small></span><span class="play-icon" aria-hidden="true">▶</span></button>
+      <p id="audio-status" class="audio-status" role="status">Tap to listen to your first word.</p>
+      <h2>Build the word you hear.</h2>
+      <p class="helper">Drag a letter, or tap it to add.</p>
+      <div class="letter-bank" id="letter-bank" aria-label="Available Persian letters" lang="fa" dir="rtl"></div>
+      <div class="answer-label"><span>YOUR WORD</span><span>Start on the right <span aria-hidden="true">←</span></span></div>
+      <div class="answer-area" id="answer-area" lang="fa" dir="rtl" aria-label="Your answer"><span class="empty-hint" lang="en" dir="ltr">Drop your letters here</span></div>
+      <p class="helper edit-hint">Tap an answer letter to move or remove it.</p>
+      <div id="edit-tools" class="edit-tools" hidden><button id="move-right">Move right →</button><button id="remove">Remove letter</button><button id="move-left">← Move left</button></div>
+      <div class="feedback" id="feedback" role="status" aria-live="polite"></div>
+      <div class="actions"><button class="secondary" id="hear-again"><span aria-hidden="true">↻</span> Hear again</button><button class="primary" id="check">Check my word <span aria-hidden="true">✓</span></button><button class="primary" id="next" hidden>Next word <span aria-hidden="true">→</span></button></div>
+    </section>
+    <p class="footer-note"><span aria-hidden="true">✦</span> Small steps. Happy learning.</p>
+  </main>
+</body>
+</html>
