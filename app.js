@@ -7,7 +7,7 @@ const words = [
   { word: 'سیب', meaning: 'apple', audio: 'audio/sib.mp3', letters: ['س', 'ی', 'ب', 'ن', 'م'] }
 ];
 const $ = id => document.getElementById(id);
-let current = 0, answer = [], selected = -1, solved = false, audio = null, playback = 0;
+let current = 0, answer = [], selected = -1, solved = false, playback = 0;
 const bank = $('letter-bank'), area = $('answer-area');
 function tile(letter, index = null) {
   const button = document.createElement('button');
@@ -27,6 +27,10 @@ function renderAnswer() {
     const hint = document.createElement('span'); hint.className = 'empty-hint'; hint.lang = 'en'; hint.dir = 'ltr'; hint.textContent = 'Drop your letters here'; area.append(hint);
   }
   answer.forEach((letter, i) => { const button = tile(letter, i); button.disabled = solved; button.classList.toggle('selected', selected === i); button.setAttribute('aria-pressed', String(selected === i)); area.append(button); });
+  const preview = $('joined-preview');
+  preview.textContent = answer.join('');
+  preview.setAttribute('aria-label', answer.length ? `Connected Persian writing: ${answer.join('')}` : 'Connected Persian writing preview');
+  $('joined-hint').textContent = answer.length ? 'Notice how the letters change shape and connect as you add them.' : 'Your letters will connect here as you build the word.';
   $('edit-tools').hidden = selected < 0 || solved;
   $('move-right').disabled = selected <= 0;
   $('move-left').disabled = selected >= answer.length - 1;
@@ -67,23 +71,47 @@ function beginDrag(event, letter, index) {
   }
   source.addEventListener('pointermove', moving); source.addEventListener('pointerup', end); source.addEventListener('pointercancel', end);
 }
-function placeholder() { $('audio-status').textContent = `Recording coming soon. For now, build the Persian word for “${words[current].meaning}”.`; }
-async function hear() {
-  const ticket = ++playback;
-  if (audio) audio.pause();
-  if ('speechSynthesis' in window) speechSynthesis.cancel();
-  $('audio-status').textContent = 'Listening…';
-  audio = new Audio(words[current].audio);
-  try { await audio.play(); if (ticket === playback) audio.onended = () => { if (ticket === playback) $('audio-status').textContent = 'Ready? Build the word below.'; }; }
-  catch {
-    if (ticket !== playback) return;
-    const voice = 'speechSynthesis' in window && speechSynthesis.getVoices().find(v => /^fa(?:-|_・|$)/i.test(v.lang));
-    if (voice) {
-      const utterance = new SpeechSynthesisUtterance(words[current].word); utterance.voice = voice; utterance.lang = 'fa-IR'; utterance.rate = .8;
-      utterance.onend = () => { if (ticket === playback) $('audio-status').textContent = 'Ready? Build the word below.'; };
-      utterance.onerror = () => { if (ticket === playback) placeholder(); }; speechSynthesis.speak(utterance);
-    } else placeholder();
+// Speak Persian without requiring uploaded recordings or API secrets.
+// On devices without a Persian voice, explain that audio is unavailable rather
+// than allowing an English voice to mispronounce the Persian text.
+function persianVoice() {
+  if (!('speechSynthesis' in window)) return null;
+  return speechSynthesis.getVoices().find(v => /^fa(?:-|_|$)/i.test(v.lang)) || null;
+}
+let pendingVoiceTimer = null;
+function clearPendingVoice() {
+  if (pendingVoiceTimer !== null) { clearTimeout(pendingVoiceTimer); pendingVoiceTimer = null; }
+}
+function voiceUnavailable() {
+  $('audio-status').textContent = 'A Persian voice is not available on this device yet. Enable a Persian speech voice in your device settings to hear the word.';
+}
+function sayWord(ticket, retry = true) {
+  if (ticket !== playback) return;
+  const voice = persianVoice();
+  if (!voice) {
+    if (retry) {
+      // Some browsers load their voice list asynchronously.
+      speechSynthesis.getVoices();
+      clearPendingVoice();
+      pendingVoiceTimer = setTimeout(() => sayWord(ticket, false), 850);
+    } else voiceUnavailable();
+    return;
   }
+  const utterance = new SpeechSynthesisUtterance(words[current].word);
+  utterance.voice = voice;
+  utterance.lang = 'fa-IR';
+  utterance.rate = 0.82;
+  utterance.onend = () => { if (ticket === playback) $('audio-status').textContent = 'Ready? Build the word below.'; };
+  utterance.onerror = () => { if (ticket === playback) $('audio-status').textContent = 'Audio could not play. Please try again.'; };
+  speechSynthesis.speak(utterance);
+}
+function hear() {
+  const ticket = ++playback;
+  clearPendingVoice();
+  if ('speechSynthesis' in window) speechSynthesis.cancel();
+  $('audio-status').textContent = 'Preparing Persian pronunciation…';
+  if ('speechSynthesis' in window) sayWord(ticket);
+  else voiceUnavailable();
 }
 $('listen').onclick = hear; $('hear-again').onclick = hear;
 $('check').onclick = () => {
@@ -94,7 +122,7 @@ $('check').onclick = () => {
   } else { $('feedback').className = 'feedback retry'; $('feedback').textContent = 'Not quite yet. Listen again and give it another try.'; }
 };
 function load() {
-  playback++; if (audio) audio.pause(); if ('speechSynthesis' in window) speechSynthesis.cancel();
+  playback++; clearPendingVoice(); if ('speechSynthesis' in window) speechSynthesis.cancel();
   answer = []; selected = -1; solved = false; changed(); bank.replaceChildren();
   const letters = [...words[current].letters];
   for (let i = letters.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [letters[i], letters[j]] = [letters[j], letters[i]]; }
